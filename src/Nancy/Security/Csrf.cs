@@ -1,6 +1,8 @@
 ﻿namespace Nancy.Security
 {
     using System;
+    using System.Linq;
+
     using Cookies;
     using Nancy.Bootstrapper;
     using Nancy.Cryptography;
@@ -114,9 +116,9 @@
             }
 
             var cookieToken = GetCookieToken(request);
-            var formToken = GetFormToken(request);
+            var providedToken = GetProvidedToken(request);
 
-            var result = CsrfApplicationStartup.TokenValidator.Validate(cookieToken, formToken, validityPeriod);
+            var result = CsrfApplicationStartup.TokenValidator.Validate(cookieToken, providedToken, validityPeriod);
 
             if (result != CsrfTokenValidationResult.Ok)
             {
@@ -124,17 +126,17 @@
             }
         }
 
-        private static CsrfToken GetFormToken(Request request)
+        private static CsrfToken GetProvidedToken(Request request)
         {
-            CsrfToken formToken = null;
+            CsrfToken providedToken = null;
 
-            var formTokenString = request.Form[CsrfToken.DEFAULT_CSRF_KEY].Value;
-            if (formTokenString != null)
+            var providedTokenString = request.Form[CsrfToken.DEFAULT_CSRF_KEY].Value ?? request.Headers[CsrfToken.DEFAULT_CSRF_KEY].FirstOrDefault();
+            if (providedTokenString != null)
             {
-                formToken = CsrfApplicationStartup.ObjectSerializer.Deserialize(formTokenString) as CsrfToken;
+                providedToken = CsrfApplicationStartup.ObjectSerializer.Deserialize(providedTokenString) as CsrfToken;
             }
 
-            return formToken;
+            return providedToken;
         }
 
         private static CsrfToken GetCookieToken(Request request)
