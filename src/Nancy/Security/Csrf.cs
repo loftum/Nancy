@@ -53,19 +53,31 @@
                         }
                     }
 
-                    var token = new CsrfToken
-                    {
-                        CreatedDate = DateTime.Now,
-                    };
-                    token.CreateRandomBytes();
-                    token.CreateHmac(cryptographyConfiguration.HmacProvider);
-                    var tokenString = CsrfApplicationStartup.ObjectSerializer.Serialize(token);
+                    var tokenString = GenerateTokenString(cryptographyConfiguration);
 
                     context.Items[CsrfToken.DEFAULT_CSRF_KEY] = tokenString;
                     context.Response.Cookies.Add(new NancyCookie(CsrfToken.DEFAULT_CSRF_KEY, tokenString, true));
                 });
 
             pipelines.AfterRequest.AddItemToEndOfPipeline(postHook);
+        }
+
+        /// <summary>
+        /// Generates a new csrf token with an optional salt.
+        /// Does not store the token in context.
+        /// </summary>
+        /// <returns>The token</returns>
+        internal static string GenerateTokenString(CryptographyConfiguration cryptographyConfiguration = null)
+        {
+            cryptographyConfiguration = cryptographyConfiguration ?? CsrfApplicationStartup.CryptographyConfiguration;
+            var token = new CsrfToken
+            {
+                CreatedDate = DateTime.Now,
+            };
+            token.CreateRandomBytes();
+            token.CreateHmac(cryptographyConfiguration.HmacProvider);
+            var tokenString = CsrfApplicationStartup.ObjectSerializer.Serialize(token);
+            return tokenString;
         }
 
         /// <summary>
@@ -85,18 +97,7 @@
         /// <returns></returns>
         public static void CreateNewCsrfToken(this INancyModule module, CryptographyConfiguration cryptographyConfiguration = null)
         {
-            cryptographyConfiguration = cryptographyConfiguration ?? CsrfApplicationStartup.CryptographyConfiguration;
-
-            var token = new CsrfToken
-            {
-                CreatedDate = DateTime.Now,
-            };
-            token.CreateRandomBytes();
-            token.CreateHmac(cryptographyConfiguration.HmacProvider);
-
-            var tokenString = CsrfApplicationStartup.ObjectSerializer.Serialize(token);
-
-            module.Context.Items[CsrfToken.DEFAULT_CSRF_KEY] = tokenString;
+            module.Context.Items[CsrfToken.DEFAULT_CSRF_KEY] = GenerateTokenString(cryptographyConfiguration);
         }
 
         /// <summary>
